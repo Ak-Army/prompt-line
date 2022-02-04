@@ -1,0 +1,31 @@
+TIMER_START="/tmp/${USER}.start.$$"
+
+if [[ ! -d "/tmp" ]]; then
+  TIMER_START="${HOME}/.${USER}.start.$$"
+fi
+
+PS0='$({{.App}} time > "$TIMER_START")'
+function _prompt_hook() {
+    local ret=$?
+
+    _elapsed=-1
+    if [[ -f "$TIMER_START" ]]; then
+        _now=$({{.App}} time)
+        _start_time=$(cat "$TIMER_START")
+        _elapsed=$((_now-_start_time))
+        rm -f "$TIMER_START"
+    fi
+    PS1="$({{.App}} run -config="{{.Config}}" -shell="bash" -error="$ret" -execution-time="$_elapsed" -width="${COLUMNS}"| tr -d '\0')"
+
+    return $ret
+}
+
+if [ "$TERM" != "linux" ] && [ -x "$(command -v {{.App}})" ] && ! [[ "$PROMPT_COMMAND" =~ "_prompt_hook" ]]; then
+    PROMPT_COMMAND="_prompt_hook; $PROMPT_COMMAND"
+fi
+
+function _prompt_cleanup() {
+  [[ -f $TIMER_START ]] && rm -f "$TIMER_START"
+}
+
+trap _prompt_cleanup EXIT

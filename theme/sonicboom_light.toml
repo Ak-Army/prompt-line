@@ -1,0 +1,62 @@
+final_space = true
+console_title = false
+console_template = "..."
+
+[[lines]]
+alignment = "left"
+
+[[lines.module]]
+name = "kubectl"
+template = "<fg=dd1e1e;bg=000000>\u2388 {{.Context}}{{if .Namespace}} :: {{.Namespace}} \ue0b1{{end}}</>"
+
+[[lines]]
+alignment = "right"
+
+[[lines.module]]
+name = "golang"
+template = "{{ if ne .Compare 0 }}<fg=dd1e1e;bg=4d4d4d>\ue0b3 </><fg=dd1e1e;bg=4d4d4d>{{.GoVersion}} {{.GoModVersion}} </>{{ end }}"
+
+[[lines.module]]
+name = "execTime"
+template = "{{ if gt .Time 0 }}<fg=43CCEA;bg=4d4d4d>\ue0b3 </><fg=fafafa;bg=4d4d4d>{{.Value}} </>{{ end }}"
+
+[[lines.module]]
+name = "exitCode"
+template = "{{ if gt .Code 0 }}<fg=43CCEA;bg=4d4d4d>\ue0b3 </><fg=fafafa;bg=4d4d4d>{{.Code}} </>{{ end }}"
+
+[[lines.module]]
+name = "dateTime"
+format = "22-01-02 15:04:05"
+template = "<fg=43CCEA;bg=4d4d4d>\ue0b3 </><fg=fafafa;bg=4d4d4d>{{.Value}} </>"
+
+[[lines]]
+alignment = "left"
+
+[[lines.module]]
+name = "session"
+template = """{{ if .IsRoot }}<fg=43CCEA;bg=4d4d4d> \uF0E7 </><fg=43CCEA;bg=4d4d4d> \ue0b1 </>{{ end }}
+<fg=43CCEA;bg=4d4d4d>{{ .UserName }}{{ if .IsSSHSession }}@{{.ComputerName}}{{ end }}</><fg=43CCEA;bg=4d4d4d> \ue0b1 </>"""
+
+[[lines.module]]
+name = "path"
+template = "<fg=43CCEA;bg=4d4d4d> \ue5ff </><fg=fafafa;bg=4d4d4d>{{.Path}} </>"
+aliases = { home = "\uF7DB " }
+length = 2
+
+[[lines.module]]
+name = "git"
+template = """<fg=43CCEA;bg=4d4d4d> \ue0b1 </>{{ if .Detached}}<fg=43CCEA;bg=red>{{ else}}<fg=43CCEA;bg=4d4d4d>{{ end }}
+  {{ .Branch }}
+{{ if ne .Tag "" }}{{ .Tag }}{{ end }}
+{{ if .Staged }} \uf044 {{ .Staged }}{{ end }}
+{{ if .Conflicts }} \uf071 {{ .Conflicts }}{{ end }}
+{{ if .Changed }} \uf046 {{ .Changed }}{{ end }}
+{{ if .Untracked }} ~ {{ .Untracked }}{{ end }}
+{{ if gt .Stashes 0 }} \uf692 {{ .Stashes }}{{ end }}</>
+"""
+fetch_stash_count = true
+fetch_status = true
+
+[[lines.module]]
+name = "text"
+template = " <fg=43CCEA>\u276F</>"
