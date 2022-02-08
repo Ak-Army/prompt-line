@@ -1,0 +1,37 @@
+function _prompt_preexec() {
+  _start_time=$({{.App}} time)
+}
+
+function _prompt_precmd() {
+  _last_error=$?
+  _elapsed=-1
+  if [ $omp_start_time ]; then
+    _now=$({{.App}} time)
+    _elapsed=$($_now-$_start_time)
+  fi
+  PS1="$({{.App}} run -config="{{.Config}}" -shell="zsh" -error="$_last_error" -execution-time="$_elapsed" -width="${COLUMNS}"| tr -d '\0')"
+  unset _start_time
+  unset _now
+  unset _elapsed
+  unset _last_error
+}
+
+function _install_prompt_hooks() {
+  for s in "${preexec_functions[@]}"; do
+    if [ "$s" = "_prompt_preexec" ]; then
+      return
+    fi
+  done
+  preexec_functions+=(_prompt_preexec)
+
+  for s in "${precmd_functions[@]}"; do
+    if [ "$s" = "_prompt_precmd" ]; then
+      return
+    fi
+  done
+  precmd_functions+=(_prompt_precmd)
+}
+
+if [ "$TERM" != "linux" ]; then
+  _install_prompt_hooks
+fi

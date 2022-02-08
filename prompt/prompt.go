@@ -1,7 +1,6 @@
 package prompt
 
 import (
-	"fmt"
 	"regexp"
 	"strings"
 	"sync"
@@ -51,7 +50,7 @@ func New(file string) (*Prompt, error) {
 	return p, nil
 }
 
-func (p *Prompt) Print(width int) error {
+func (p *Prompt) Print(width int) string {
 	now := time.Now()
 	wg := sync.WaitGroup{}
 	for _, l := range p.Lines {
@@ -144,8 +143,6 @@ func (p *Prompt) Print(width int) error {
 	if p.FinalSpace {
 		buffer.WriteString(" ")
 	}
-	regex := regexp.MustCompile(`(\x1b\[[^m]+m)`)
-	fmt.Print(regex.ReplaceAllString(buffer.String(), "\\[${1}\\]"))
 	xlog.Infof("Render time: %s", time.Since(now))
-	return nil
+	return buffer.String()
 }
