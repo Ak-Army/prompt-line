@@ -60,6 +60,7 @@ jobs:
         uses: actions/checkout@master
       - name: Zip theme files
         run: |
+          mkdir release &&
           zip -r release/themes.zip theme/*.*
       - name: Upload the artifacts
         uses: skx/github-action-publish-binaries@master
