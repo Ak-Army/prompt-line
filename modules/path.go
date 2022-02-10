@@ -53,7 +53,6 @@ func (p *path) Init() error {
 		dirs := strings.Split(p.Path, string(os.PathSeparator))
 		l := len(dirs)
 		if p.Length+1 < l {
-
 			p.Path = strings.Join(dirs[0:p.Length], string(os.PathSeparator)) +
 				string(os.PathSeparator) +
 				"..." +

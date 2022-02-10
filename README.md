@@ -4,6 +4,9 @@ A cross-shell themeable prompt heavily inspired by
 * [powerline-go](https://github.com/justjanne/powerline-go)
 * [bronze](https://github.com/reujab/bronze)
 
+![](doc/sonicboom_light.png)
+![](doc/yellow_cab.png)
+
 # Installation
 
 ## Recommanded
@@ -12,7 +15,7 @@ Nerd Fonts are popular fonts that are patched to include icons.
 We recommend [Meslo LGM NF](https://github.com/ryanoasis/nerd-fonts/releases/download/v2.1.0/Meslo.zip), 
 but any Nerd Font should be compatible with the standard themes.
 
-##From source
+## From source
 * install and setup [Go](https://go.dev/)
 * run `go install github.com/Ak-Army/prompt-line@latest`
 
@@ -47,7 +50,7 @@ Once added, reload your config for the changes to take effect.
 source ~/.zshrc
 ``````
 
-## ZSH
+## FISH
 Add the following to `~/.config/fish/config.fish`.
 ```bash
 ~/prompt-line init -shell fish -config ${HOME}/theme/default.toml) |source

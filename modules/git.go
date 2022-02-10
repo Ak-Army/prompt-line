@@ -41,7 +41,7 @@ func (g *git) Init() error {
 	if err == nil {
 		i, err := strconv.ParseInt(strings.TrimSpace(lastFetch), 10, 64)
 		if err == nil && time.Since(time.Unix(i, 0)).Hours() > 1 {
-			g.Base.runCommand("git", "fetch")
+			g.runCommand("git", "fetch")
 		}
 	}
 	status, err := g.Base.runCommand("git", "status", "--porcelain", "-b", "--ignore-submodules")
@@ -55,20 +55,11 @@ func (g *git) Init() error {
 	return nil
 }
 
-func (g *git) getStashCount() {
-	stdout, err := g.Base.runCommand("git", "log", "--format=\"%%gd: %%gs\"", "-g", "--first-parent", "-m", "refs/stash", "--")
-	if err != nil {
-		return
-	}
-
-	g.Stashes = len(strings.Split(stdout, "\n")) - 1
-}
-
 func (g *git) parseBranchLine(line string) {
 	if strings.Contains(line, "no Branch") {
 		g.Detached = true
 		g.Branch = "no Branch"
-		hash, _ := g.Base.runCommand("git", "rev-parse", "--short", "HEAD")
+		hash, _ := g.runCommand("git", "rev-parse", "--short", "HEAD")
 		g.Branch += ":" + strings.TrimSpace(hash[0:len(hash)-1])
 	} else if strings.Contains(line, "...") {
 		g.HasRemote = true
@@ -96,25 +87,20 @@ func (g *git) collectChanges(lines []string) {
 		if len(line) == 0 {
 			continue
 		}
-
 		idxStatus := line[0]
 		wtStatus := line[1]
-
 		// " M  hoge.txt" , "AM ahoo.png" , ...
 		if wtStatus != ' ' && wtStatus != '?' {
 			g.Changed++
 		}
-
 		// "MT hoge.cpp" , "A  fuga.txt" , ...
 		if idxStatus != ' ' && idxStatus != '?' {
 			g.Staged++
 		}
-
 		// "?? hoge.txt", ...
 		if idxStatus == '?' && wtStatus == '?' {
 			g.Untracked++
 		}
-
 		// "UU hogehoge.txt" ...
 		if idxStatus == 'U' && wtStatus == 'U' {
 			g.Conflicts++
@@ -125,11 +111,4 @@ func (g *git) collectChanges(lines []string) {
 func (g *git) runCommand(command string, args ...string) (string, error) {
 	args = append([]string{"--no-optional-locks", "-c", "core.quotepath=false", "-c", "color.status=false"}, args...)
 	return g.Base.runCommand(command, args...)
-}
-
-func (g *git) getTag() {
-	tag, _ := g.Base.runCommand("git", "describe", "--tags", "--exact")
-	if tag != "" {
-		g.Tag = strings.TrimSpace(tag[0 : len(tag)-1])
-	}
 }

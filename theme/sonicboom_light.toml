@@ -26,8 +26,7 @@ template = "{{ if gt .Code 0 }}<fg=43CCEA;bg=4d4d4d>\ue0b3 </><fg=fafafa;bg=4d4d
 
 [[lines.module]]
 name = "dateTime"
-format = "22-01-02 15:04:05"
-template = "<fg=43CCEA;bg=4d4d4d>\ue0b3 </><fg=fafafa;bg=4d4d4d>{{.Value}} </>"
+template = "<fg=43CCEA;bg=4d4d4d>\ue0b3 </><fg=fafafa;bg=4d4d4d>{{.Time | date \"06-01-02 15:04:05\"}}</>"
 
 [[lines]]
 alignment = "left"

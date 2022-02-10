@@ -13,6 +13,5 @@ type text struct {
 }
 
 func (t *text) Init() error {
-
 	return nil
 }

@@ -16,6 +16,8 @@ import (
 	"github.com/Ak-Army/prompt-line/modules"
 )
 
+var re = regexp.MustCompile(`\x1b\[[^m]+m`)
+
 type Prompt struct {
 	ConsoleTemplate string  `toml:"console_template"`
 	ConsoleTitle    bool    `toml:"console_title"`
@@ -23,6 +25,9 @@ type Prompt struct {
 	Lines           []*Line `toml:"lines"`
 
 	metaData toml.MetaData
+	lastLine *strings.Builder
+	render   *template.Template
+	buffer   *strings.Builder
 }
 
 type Line struct {
@@ -52,40 +57,30 @@ func New(file string) (*Prompt, error) {
 
 func (p *Prompt) Print(width int) string {
 	now := time.Now()
-	wg := sync.WaitGroup{}
+	wg := &sync.WaitGroup{}
 	for _, l := range p.Lines {
 		for _, m := range l.Modules {
-			module := &Module{}
-			if err := p.metaData.PrimitiveDecode(m, module); err != nil {
-				xlog.Error("Unable to parse module %s", m)
-				continue
-			}
-			mod := modules.GetModule(module.Name)
-			if mod == nil {
-				xlog.Error("Unknown module: %s", module.Name)
-				continue
-			}
-			if err := p.metaData.PrimitiveDecode(m, mod); err != nil {
-				xlog.Error("Unable to parse module params %s", module.Name)
-				continue
-			}
-			l.modules = append(l.modules, module)
-			wg.Add(1)
-			go func(m *Module) {
-				n := time.Now()
-				err := mod.Init()
-				if err != nil {
-					xlog.Warnf("Unable to init module %s", m.Name, err)
-				} else {
-					m.mod = mod
-				}
-				xlog.Infof("%s module init time: %s", m.Name, time.Since(n))
-				wg.Done()
-			}(module)
+			p.initModule(m, l, wg)
 		}
 	}
 	wg.Wait()
-	buffer := &strings.Builder{}
+	p.buffer = &strings.Builder{}
+	p.renderConsoleTitle(p.buffer)
+
+	p.lastLine = &strings.Builder{}
+	p.render = template.New("template").Funcs(sprig.TxtFuncMap())
+
+	for _, l := range p.Lines {
+		p.renderModules(l, width)
+	}
+	if p.FinalSpace {
+		p.buffer.WriteString(" ")
+	}
+	xlog.Infof("Render time: %s", time.Since(now))
+	return p.buffer.String()
+}
+
+func (p *Prompt) renderConsoleTitle(buffer *strings.Builder) {
 	if p.ConsoleTitle && p.ConsoleTemplate != "" {
 		buffer.WriteString("\033]0;")
 		t, err := template.New("consolTemplate").Parse(p.ConsoleTemplate)
@@ -96,53 +91,75 @@ func (p *Prompt) Print(width int) string {
 		}
 		buffer.WriteString("\a")
 	}
-	var re = regexp.MustCompile(`\x1b\[[^m]+m`)
-	builder := &strings.Builder{}
-	render := template.New("template").Funcs(sprig.TxtFuncMap())
+}
 
-	for _, l := range p.Lines {
-		var left string
-		if l.Alignment == "right" {
-			left = builder.String()
-		} else if l.NewLine {
-			buffer.WriteString("\n")
-		}
-		builder = &strings.Builder{}
-
-		for _, m := range l.modules {
-			if m.mod == nil {
-				continue
-			}
-			t, err := render.Parse(m.Template)
-			if err != nil {
-				xlog.Errorf("Unable to parse %s module template", m.Name, err)
-				continue
-			}
-			b := &strings.Builder{}
-			if err := t.Execute(b, m.mod); err != nil {
-				xlog.Errorf("Unable to render %s module template", m.Name, err)
-			}
-			color.Fprint(builder, b.String())
-		}
-		content := strings.ReplaceAll(strings.ReplaceAll(builder.String(), "\n", ""), "\r", "")
-		if l.Alignment == "right" && len(content) > 0 {
-			leftLength := utf8.RuneCountInString(re.ReplaceAllString(left, ``))
-			rightLength := utf8.RuneCountInString(re.ReplaceAllString(content, ``))
-			count := width - leftLength - rightLength
-
-			if count < 0 {
-				count = 5
-			}
-			buffer.WriteString(strings.Repeat(" ", count))
-			buffer.WriteString(content)
-			buffer.WriteString("\n")
+func (p *Prompt) initModule(m toml.Primitive, l *Line, wg *sync.WaitGroup) {
+	module := &Module{}
+	if err := p.metaData.PrimitiveDecode(m, module); err != nil {
+		xlog.Error("Unable to parse module %s", m)
+		return
+	}
+	mod := modules.GetModule(module.Name)
+	if mod == nil {
+		xlog.Error("Unknown module: %s", module.Name)
+		return
+	}
+	if err := p.metaData.PrimitiveDecode(m, mod); err != nil {
+		xlog.Error("Unable to parse module params %s", module.Name)
+		return
+	}
+	l.modules = append(l.modules, module)
+	wg.Add(1)
+	go func(m *Module) {
+		n := time.Now()
+		err := mod.Init()
+		if err != nil {
+			xlog.Warnf("Unable to init module %s", m.Name, err)
 		} else {
-			buffer.WriteString(content)
+			m.mod = mod
 		}
+		xlog.Infof("%s module init time: %s", m.Name, time.Since(n))
+		wg.Done()
+	}(module)
+}
+
+func (p *Prompt) renderModules(l *Line, width int) {
+	var left string
+	if l.Alignment == "right" {
+		left = p.lastLine.String()
+	} else if l.NewLine {
+		p.buffer.WriteString("\n")
 	}
-	if p.FinalSpace {
-		buffer.WriteString(" ")
+	p.lastLine = &strings.Builder{}
+
+	for _, m := range l.modules {
+		if m.mod == nil {
+			continue
+		}
+		t, err := p.render.Parse(m.Template)
+		if err != nil {
+			xlog.Errorf("Unable to parse %s module template", m.Name, err)
+			continue
+		}
+		b := &strings.Builder{}
+		if err := t.Execute(b, m.mod); err != nil {
+			xlog.Errorf("Unable to render %s module template", m.Name, err)
+		}
+		color.Fprint(p.lastLine, b.String())
 	}
-	xlog.Infof("Render time: %s", time.Since(now))
-	return buffer.String()
+	content := strings.ReplaceAll(strings.ReplaceAll(p.lastLine.String(), "\n", ""), "\r", "")
+	if l.Alignment == "right" && len(content) > 0 {
+		leftLength := utf8.RuneCountInString(re.ReplaceAllString(left, ``))
+		rightLength := utf8.RuneCountInString(re.ReplaceAllString(content, ``))
+		count := width - leftLength - rightLength
+
+		if count < 0 {
+			count = 5
+		}
+		p.buffer.WriteString(strings.Repeat(" ", count))
+		p.buffer.WriteString(content)
+		p.buffer.WriteString("\n")
+	} else {
+		p.buffer.WriteString(content)
+	}
 }
