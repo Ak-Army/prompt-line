@@ -25,6 +25,9 @@ var zshInit string
 //go:embed init/fish.templ
 var fishInit string
 
+//go:embed init/elvish.templ
+var elvishInit string
+
 type Init struct {
 	Base
 	App string `flag:"-"`
@@ -57,6 +60,8 @@ func (c *Init) Run(_ context.Context) error {
 		t, err = template.New("init").Parse(zshInit)
 	case "fish":
 		t, err = template.New("init").Parse(fishInit)
+	case "elvish":
+		t, err = template.New("init").Parse(elvishInit)
 	default:
 		err = errors.New("unknown shell")
 	}

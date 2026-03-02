@@ -1,0 +1,30 @@
+# Define Hooks
+var cmd-status-code = 0
+
+fn after-command-hook {|m|
+    var error = $m[error]
+    if (is $error $nil) {
+        set cmd-status-code = 0
+    } else {
+        try {
+            set cmd-status-code = $error[reason][exit-status]
+        } catch {
+            # The error is from the built-in commands and they have no status code.
+            set cmd-status-code = 1
+        }
+    }
+}
+
+# Install Hooks
+set edit:after-command = [ $@edit:after-command $after-command-hook~ ]
+
+# Install prompt-line
+set edit:prompt = {
+    var cmd-duration = (printf "%.0f" (* $edit:command-duration 1000))
+    {{.App}} run -config="{{.Config}}" -align=left -shell="elvish" -error=$cmd-status-code -execution-time=$cmd-duration
+}
+
+set edit:rprompt = {
+    var cmd-duration = (printf "%.0f" (* $edit:command-duration 1000))
+    {{.App}} run  -align=right -config="{{.Config}}" -shell="elvish" -error=$cmd-status-code -execution-time=$cmd-duration
+}

@@ -20,6 +20,7 @@ type Run struct {
 	Width         int     `flag:"width, width of the terminal"`
 	Error         int     `flag:"error, last command error"`
 	ExecutionTime float64 `flag:"execution-time, last command execution time"`
+	Align         string  `flag:"align, render left/right order"`
 }
 
 func (c *Run) Help() string {
@@ -39,7 +40,7 @@ func (c *Run) Run(ctx context.Context) error {
 	modules.Get().SetExitCode(c.Error)
 	modules.Get().SetExecutionTime(c.ExecutionTime)
 
-	line := p.Print(c.Width)
+	line := p.Print(c.Width, c.Align)
 	switch c.Shell {
 	case "bash":
 		regex := regexp.MustCompile(`(\x1b\[[^m]+m)`)

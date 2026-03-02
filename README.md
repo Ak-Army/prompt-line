@@ -59,3 +59,12 @@ Once added, reload your config for the changes to take effect.
 ```bash
 . ~/.config/fish/config.fish
 ```
+## ELVISH
+Add the following to `~/.elvish/rc.elv`.
+```bash
+eval (/home/hunyi/prompt-line init "-shell=elvish" "-config=/home/hunyi/prompt_config.toml"  | slurp)
+```
+Once added, reload your config for the changes to take effect.
+```bash
+. ~/.elvish/rc.elv
+```

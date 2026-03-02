@@ -55,7 +55,7 @@ func New(file string) (*Prompt, error) {
 	return p, nil
 }
 
-func (p *Prompt) Print(width int) string {
+func (p *Prompt) Print(width int, align string) string {
 	now := time.Now()
 	wg := &sync.WaitGroup{}
 	for _, l := range p.Lines {
@@ -71,7 +71,18 @@ func (p *Prompt) Print(width int) string {
 	p.render = template.New("template").Funcs(sprig.TxtFuncMap())
 
 	for _, l := range p.Lines {
-		p.renderModules(l, width)
+		switch align {
+		case "left":
+			if l.Alignment == "left" {
+				p.renderModules(l, width)
+			}
+		case "right":
+			if l.Alignment == "right" {
+				p.renderModules(l, width)
+			}
+		default:
+			p.renderModules(l, width)
+		}
 	}
 	if p.FinalSpace {
 		p.buffer.WriteString(" ")
