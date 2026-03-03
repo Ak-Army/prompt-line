@@ -2,49 +2,40 @@ name: Release
 on:
   release:
     types: [created]
+env:
+  GO_VERSION: '1.25'
 jobs:
   release:
     name: Build release binaries
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        os: [ 'darwin', 'windows', 'freebsd', 'openbsd' ]
-        arch: [ 'amd64' ]
+        include:
+          - os: darwin
+            arch: amd64
+          - os: windows
+            arch: amd64
+          - os: freebsd
+            arch: amd64
+          - os: openbsd
+            arch: amd64
+          - os: linux
+            arch: amd64
+          - os: linux
+            arch: arm64
+          - os: linux
+            arch: arm
     steps:
       - name: Checkout the repository
-        uses: actions/checkout@master
+        uses: actions/checkout@v4
       - name: Setup Golang
-        uses: actions/setup-go@v1
+        uses: actions/setup-go@v5
         with:
-          go-version: '1.17'
-      - run: go build -o release/prompt-line-$GOOS-$GOARCH
+          go-version: ${{ env.GO_VERSION }}
+      - run: go build -o release/prompt-line-${{ matrix.os }}-${{ matrix.arch }}
         env:
           CGO_ENABLED: 0
           GOOS: ${{ matrix.os }}
-          GOARCH: ${{ matrix.arch }}
-      - name: Upload the artifacts
-        uses: skx/github-action-publish-binaries@master
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          args: 'release/prompt-line-*'
-  release-linux:
-    name: Build release binaries for linux
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        arch: [ 'amd64', 'arm64', 'arm' ]
-    steps:
-      - name: Checkout the repository
-        uses: actions/checkout@master
-      - name: Setup Golang
-        uses: actions/setup-go@v1
-        with:
-          go-version: '1.17'
-      - run: go build -o release/prompt-line-$GOOS-$GOARCH
-        env:
-          CGO_ENABLED: 0
-          GOOS: linux
           GOARCH: ${{ matrix.arch }}
       - name: Upload the artifacts
         uses: skx/github-action-publish-binaries@master
@@ -57,10 +48,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout the repository
-        uses: actions/checkout@master
+        uses: actions/checkout@v4
       - name: Zip theme files
         run: |
-          mkdir release &&
+          mkdir release
           zip -r release/themes.zip theme/*.*
       - name: Upload the artifacts
         uses: skx/github-action-publish-binaries@master
